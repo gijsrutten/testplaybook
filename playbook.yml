@@ -1,0 +1,30 @@
+---
+- name: Set hostname to support.mydomain.com
+  hosts: all
+  gather_facts: false
+  become: true
+
+  tasks:
+  - name: Set hostname
+    hostname:
+      name: support.mydomain.com
+    register: hostname_result
+
+  - name: Update /etc/hosts
+    lineinfile:
+      path: /etc/hosts
+      regexp: '^127.0.0.1'
+      line: "127.0.0.1 support.mydomain.com {{ ansible_hostname }}"
+    when: hostname_result.changed
+
+  - name: Update /etc/hostname
+    lineinfile:
+      path: /etc/hostname
+      line: "support.mydomain.com"
+    when: hostname_result.changed
+
+  - name: Restart networking service
+    service:
+      name: networking
+      state: restarted
+    when: hostname_result.changed
